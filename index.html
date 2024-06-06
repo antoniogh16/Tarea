@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permutación Circular - Diagrama de Árbol</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        #tree-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .tree {
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .tree ul {
+            padding-top: 20px;
+            position: relative;
+            transition: all 0.5s;
+            -webkit-transition: all 0.5s;
+            -moz-transition: all 0.5s;
+            list-style-type: none;
+        }
+
+        .tree li {
+            float: left;
+            text-align: center;
+            position: relative;
+            padding: 20px 5px 0 5px;
+            transition: all 0.5s;
+            -webkit-transition: all 0.5s;
+            -moz-transition: all 0.5s;
+        }
+
+        .tree li::before, .tree li::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 50%;
+            border-top: 2px solid #ccc;
+            width: 50%;
+            height: 20px;
+        }
+
+        .tree li::after {
+            right: auto;
+            left: 50%;
+            border-left: 2px solid #ccc;
+        }
+
+        .tree li:only-child::after, .tree li:only-child::before {
+            display: none;
+        }
+
+        .tree li:only-child {
+            padding-top: 0;
+        }
+
+        .tree li:first-child::before, .tree li:last-child::after {
+            border: 0 none;
+        }
+
+        .tree li:last-child::before {
+            border-right: 2px solid #ccc;
+            border-radius: 0 5px 0 0;
+        }
+
+        .tree li:first-child::after {
+            border-radius: 5px 0 0 0;
+        }
+
+        .tree ul ul::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            border-left: 2px solid #ccc;
+            width: 0;
+            height: 20px;
+        }
+
+        #circle-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .circle {
+            width: 300px;
+            height: 300px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px;
+        }
+
+        .circle span {
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <h1>Permutación Circular - Diagrama de Árbol</h1>
+                <div id="tree-container"></div>
+                <div id="repetitions"></div>
+                <div id="table-container"></div>
+                <div id="circle-container">
+                    <div class="circle" id="initial-circle"></div>
+                    <div class="circle" id="final-circle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const treeContainer = document.getElementById('tree-container');
+            const repetitionsContainer = document.getElementById('repetitions');
+            const tableContainer = document.getElementById('table-container');
+            const initialCircle = document.getElementById('initial-circle');
+            const finalCircle = document.getElementById('final-circle');
+
+            function generatePermutations(arr) {
+                if (arr.length === 1) return [arr];
+                const perms = [];
+                for (let i = 0; i < arr.length; i++) {
+                    const rest = generatePermutations(arr.slice(0, i).concat(arr.slice(i + 1)));
+                    for (let perm of rest) {
+                        perms.push([arr[i]].concat(perm));
+                    }
+                }
+                return perms;
+            }
+
+            function circularPermutations(arr) {
+                const perms = generatePermutations(arr);
+                const uniquePerms = new Set(perms.map(perm => {
+                    const normalized = normalizeCircularPermutation(perm);
+                    return normalized.join(',');
+                }));
+                return Array.from(uniquePerms).map(perm => perm.split(','));
+            }
+
+            function normalizeCircularPermutation(perm) {
+                const rotations = [];
+                for (let i = 0; i < perm.length; i++) {
+                    rotations.push([...perm.slice(i), ...perm.slice(0, i)]);
+                }
+                const minRotation = rotations.reduce((min, current) => min.join('') < current.join('') ? min : current);
+                const reflection = minRotation.slice().reverse();
+                const reflections = [minRotation, reflection];
+                return reflections.map(refl => refl.join(',')).sort()[0].split(',');
+            }
+
+            function countLastNumberRepetitions(permutations) {
+                const lastNumber = permutations[0][permutations[0].length - 1];
+                let count = 0;
+                for (let perm of permutations) {
+                    if (perm[perm.length - 1] === lastNumber) {
+                        count++;
+                    }
+                }
+                return count;
+            }
+
+            function countLastLetterOccurrences(permutations) {
+                const occurrences = {};
+                permutations.forEach(perm => {
+                    const lastLetter = perm[perm.length - 1];
+                    if (!occurrences[lastLetter]) {
+                        occurrences[lastLetter] = 0;
+                    }
+                    occurrences[lastLetter]++;
+                });
+                return occurrences;
+            }
+
+            function createTree(permutations) {
+                const ul = document.createElement('ul');
+                ul.classList.add('tree');
+                permutations.forEach(perm => {
+                    const li = document.createElement('li');
+                    li.textContent = perm.join(' -> ');
+                    ul.appendChild(li);
+                });
+                return ul;
+            }
+
+            function createTable(total, occurrences) {
+                const table = document.createElement('table');
+                table.classList.add('table', 'table-bordered', 'mt-4');
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th>Total Permutaciones</th>
+                        <th>Letra</th>
+                        <th>Repeticiones</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                for (const [letter, count] of Object.entries(occurrences)) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${total}</td>
+                        <td>${letter}</td>
+                        <td>${count}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+                table.appendChild(tbody);
+                return table;
+            }
+
+            function createCircle(container, items) {
+                const angleStep = (2 * Math.PI) / items.length;
+                items.forEach((item, index) => {
+                    const angle = index * angleStep;
+                    const x = 150 + 120 * Math.cos(angle);
+                    const y = 150 + 120 * Math.sin(angle);
+                    const span = document.createElement('span');
+                    span.style.left = `${x}px`;
+                    span.style.top = `${y}px`;
+                    span.textContent = item;
+                    container.appendChild(span);
+                });
+            }
+
+            const people = ['A', 'B', 'C', 'D', 'E', 'F'];
+            const permutations = circularPermutations(people);
+
+            const tree = createTree(permutations);
+            treeContainer.appendChild(tree);
+
+            const lastNumberRepetitions = countLastNumberRepetitions(permutations);
+            repetitionsContainer.innerHTML = `<p>Cada Vecino final se repite ${lastNumberRepetitions} veces.</p>`;
+
+            const lastLetterOccurrences = countLastLetterOccurrences(permutations);
+            const table = createTable(permutations.length, lastLetterOccurrences);
+            tableContainer.appendChild(table);
+
+            createCircle(initialCircle, people);
+            createCircle(finalCircle, permutations[permutations.length - 1]);
+        });
+    </script>
+</body>
+</html>
